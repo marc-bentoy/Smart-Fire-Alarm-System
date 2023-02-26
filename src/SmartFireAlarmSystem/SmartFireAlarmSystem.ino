@@ -6,6 +6,7 @@ const int LED_PIN = 7;
 const int BUTTON_PIN = 6;
 const int BUZZER_PIN = 5;
 const int FLAME_PIN = 6;
+const int SMOKE_PIN = 4;
 
 // ALARM CONSTANTS
 const int ALARM_INTERVAL = 2000;
@@ -17,6 +18,10 @@ unsigned long serial_time = 0;
 unsigned long current_time = 0;
 unsigned long alarm_time = 0;
 unsigned long call_time = 0;
+
+// String BFP_NUM = "09239320152";
+String BRGY_NUM = "09770651742";
+String DEV_NUM = "09239320152";
 
 bool shouldAlarm = false;
 bool hasSentAlarmSMS = false;
@@ -40,6 +45,8 @@ void loop() {
   if (start_time - serial_time >= 2000) {
     Serial.print("FLAME: ");
     Serial.println(digitalRead(FLAME_PIN));
+    Serial.print("SMOKE: ");
+    Serial.println(digitalRead(SMOKE_PIN));
     Serial.print("BUTTON: ");
     Serial.println(digitalRead(BUTTON_PIN));
     Serial.print("start_time: ");
@@ -53,7 +60,7 @@ void loop() {
   }
 
   // if flame is detected
-  if ((digitalRead(FLAME_PIN) == HIGH || digitalRead(BUTTON_PIN) == HIGH) && !shouldAlarm) {
+  if (((digitalRead(FLAME_PIN) == HIGH && digitalRead(SMOKE_PIN) == HIGH) || digitalRead(BUTTON_PIN) == HIGH) && !shouldAlarm) {
     Serial.println("!!!!");
     Serial.println("FLAME DETECTED OR FIRE ALARM PRESSED");
     Serial.println("!!!!");
