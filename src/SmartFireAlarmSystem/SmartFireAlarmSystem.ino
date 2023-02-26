@@ -20,12 +20,16 @@ unsigned long alarm_time = 0;
 unsigned long call_time = 0;
 
 // String BFP_NUM = "09239320152";
-String BRGY_NUM = "09770651742";
-String DEV_NUM = "09239320152";
+String BRGY_NUM = "+639770651742";
+String DEV_NUM = "+639239320152";
+String FIRE_THRESHOLD_EXCEEDED_MSG = "🔥🔥FIRE ALARM🔥🔥";
+String FIRE_ALARM_PRESSED_MSG = "🔽🔽 FIRE ALARM PRESSED 🔽🔽";
+String FIRE_AND_SMOKE_DETECTED = "🔥💨FLAME AND SMOKE DETECTED🔥💨";
 
 bool shouldAlarm = false;
 bool hasSentAlarmSMS = false;
 bool hasCalledAlarm = false;
+bool isCalling = false;
 
 void setup() {
   Serial.begin(9600);
@@ -59,16 +63,26 @@ void loop() {
     serial_time = start_time;
   }
 
-  // if flame is detected
-  if (((digitalRead(FLAME_PIN) == HIGH && digitalRead(SMOKE_PIN) == HIGH) || digitalRead(BUTTON_PIN) == HIGH) && !shouldAlarm) {
-    Serial.println("!!!!");
-    Serial.println("FLAME DETECTED OR FIRE ALARM PRESSED");
-    Serial.println("!!!!");
+  // if fire alarm button is pressed 
+  if (digitalRead(BUTTON_PIN) == HIGH && !shouldAlarm) {
+    Serial.println("🔽🔽 FIRE ALARM PRESSED 🔽🔽");
     shouldAlarm = true;
     current_time = start_time;
     alarm_time = start_time;
     sendSMS();
     call();
+  }
+
+  // if flame is detected
+  if (digitalRead(FLAME_PIN) == HIGH && digitalRead(SMOKE_PIN) == HIGH) {
+    Serial.println("🔥💨FLAME AND SMOKE DETECTED🔥💨");
+    shouldAlarm = true;
+    current_time = start_time;
+    alarm_time = start_time;
+    sendSMS();
+
+    if (!isCalling)
+      call();
   }
 
   if (!shouldAlarm) {
@@ -84,6 +98,8 @@ void loop() {
     Serial.println("*****");
     Serial.println("ALARM DURATION reached!");
     Serial.println("*****");
+
+    endCall();
 
     // turn off alarms
     digitalWrite(BUZZER_PIN, LOW);
@@ -115,9 +131,9 @@ void loop() {
 void sendSMS() {
   gsm.println("AT+CMGF=1");
   delay(100);
-  gsm.println("AT+CMGS=\"09239320152\"\r");
+  gsm.println("AT+CMGS=\"" + DEV_NUM + "\"\r");
   delay(100);
-  gsm.println("[FIRE ALARM]");
+  gsm.println(FIRE_ALARM_MESSAGE);
   delay(100);
   gsm.println((char)26);
   delay(100);
@@ -126,12 +142,17 @@ void sendSMS() {
 void call() {
   gsm.println("AT");
   delay(500);
-  gsm.println("ATD+639239320152;");
+  gsm.println("ATD" + DEV_NUM + ";");
   gsm.println();
+  isCalling = true;
 }
 
 void endCall() {
   gsm.print("ATH");
   call_time = start_time;
   delay(100);
+  isCalling = false;
+  Serial.println("*******");
+  Serial.println("Call Alarm Ended");
+  Serial.println("*******");
 }
