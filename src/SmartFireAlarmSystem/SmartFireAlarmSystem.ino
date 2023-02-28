@@ -5,8 +5,8 @@ SoftwareSerial gsm(8, 9);
 const int LED_PIN = 7;
 const int BUTTON_PIN = 6;
 const int BUZZER_PIN = 5;
-const int FLAME_PIN = 6;
-const int SMOKE_PIN = 4;
+const int FLAME_PIN = 4;
+// const int SMOKE_PIN = 4;
 
 // ALARM CONSTANTS
 const int ALARM_INTERVAL = 2000;
@@ -49,8 +49,6 @@ void loop() {
   if (start_time - serial_time >= 2000) {
     Serial.print("FLAME: ");
     Serial.println(digitalRead(FLAME_PIN));
-    Serial.print("SMOKE: ");
-    Serial.println(digitalRead(SMOKE_PIN));
     Serial.print("BUTTON: ");
     Serial.println(digitalRead(BUTTON_PIN));
     Serial.print("start_time: ");
@@ -69,17 +67,17 @@ void loop() {
     shouldAlarm = true;
     current_time = start_time;
     alarm_time = start_time;
-    sendSMS();
+    sendSMS(FIRE_ALARM_PRESSED_MSG);
     call();
   }
 
   // if flame is detected
-  if (digitalRead(FLAME_PIN) == HIGH && digitalRead(SMOKE_PIN) == HIGH) {
+  if (digitalRead(FLAME_PIN) == LOW && !shouldAlarm) {
     Serial.println("🔥💨FLAME AND SMOKE DETECTED🔥💨");
     shouldAlarm = true;
     current_time = start_time;
     alarm_time = start_time;
-    sendSMS();
+    sendSMS(FIRE_THRESHOLD_EXCEEDED_MSG);
 
     if (!isCalling)
       call();
@@ -95,11 +93,7 @@ void loop() {
   }
 
   if (start_time - current_time > ALARM_DURATION) {
-    Serial.println("*****");
-    Serial.println("ALARM DURATION reached!");
-    Serial.println("*****");
-
-    endCall();
+    stopCall();
 
     // turn off alarms
     digitalWrite(BUZZER_PIN, LOW);
@@ -110,9 +104,6 @@ void loop() {
   }
 
   if (start_time - alarm_time >= ALARM_INTERVAL && start_time - alarm_time <= ALARM_INTERVAL * 2) {
-    Serial.println("...");
-    Serial.println("ALARM INTERVAL reached");
-    Serial.println("...");
     digitalWrite(BUZZER_PIN, LOW);
     digitalWrite(LED_PIN, LOW);
     return;
@@ -123,17 +114,16 @@ void loop() {
     return;
   }
 
-  Serial.println("!!ALARMING!!");
   digitalWrite(BUZZER_PIN, HIGH);
   digitalWrite(LED_PIN, HIGH);
 }
 
-void sendSMS() {
+void sendSMS(String message) {
   gsm.println("AT+CMGF=1");
   delay(100);
   gsm.println("AT+CMGS=\"" + DEV_NUM + "\"\r");
   delay(100);
-  gsm.println(FIRE_ALARM_MESSAGE);
+  gsm.println(message);
   delay(100);
   gsm.println((char)26);
   delay(100);
@@ -147,7 +137,7 @@ void call() {
   isCalling = true;
 }
 
-void endCall() {
+void stopCall() {
   gsm.print("ATH");
   call_time = start_time;
   delay(100);

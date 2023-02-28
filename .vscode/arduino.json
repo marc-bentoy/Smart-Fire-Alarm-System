@@ -1,0 +1,5 @@
+{
+    "board": "arduino:avr:uno",
+    "programmer": "arduinoasispatmega32u4",
+    "port": "COM9"
+}
